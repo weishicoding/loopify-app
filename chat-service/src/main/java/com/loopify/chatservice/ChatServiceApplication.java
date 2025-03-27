@@ -1,13 +1,13 @@
-package com.loopify.main_service;
+package com.loopify.chatservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MainServiceApplication {
+public class ChatServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MainServiceApplication.class, args);
+		SpringApplication.run(ChatServiceApplication.class, args);
 	}
 
 }

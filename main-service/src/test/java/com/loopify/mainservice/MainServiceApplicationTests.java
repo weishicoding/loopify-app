@@ -1,10 +1,12 @@
-package com.loopify.chat_service;
+package com.loopify.mainservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
-class ChatServiceApplicationTests {
+@ActiveProfiles("test")
+class MainServiceApplicationTests {
 
 	@Test
 	void contextLoads() {
