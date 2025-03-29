@@ -3,10 +3,10 @@ package com.loopify.mainservice.model.user;
 import com.loopify.mainservice.model.audit.DateAudit;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "refresh_tokens",
         indexes = {
