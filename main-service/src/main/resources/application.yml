@@ -1,5 +1,7 @@
 server:
   port: 8080
+
+
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/loopify?useSSL=false&serverTimezone=UTC
@@ -11,8 +13,58 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
 
+  # Redis Configuration
+  # RabbitMQ Configuration
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2
+  data:
+    redis:
+      port: 6379
+      host: localhost
+      timeout: 2000
+
+# Custom Application Properties
 app:
   jwtSecret: 8905473032bb464a531e7f1c52a28b6b793f46379f8a8c2d899f30e47325e897fcc7c284005593b242334e6642d5f275c601634ee3d66a02dda7a787064612772dbfc8b599f8d3b4e74a60b564f42ec6a15750c819aa0b59c294b9c8dc51800b6198d2dd6ea0415fc079bf83f6403a2c5f8f029acc092b1e1a120fb805e46e7c3e17b4e7b17632aeaf43f455bac480bc8c1d672bc83e2e86e5daf16ebf1f1be9d9d5b02d6fd97f4c900dc73b6f082a24e6f9e6530f59fc56fb7d20ccf5d73fc7c6b05be5c4f19a50cba77aa406366abf8fe5b98f84e3c3fc5500aec446bf74b806f4c843ad572953463227c24c4ef9ad5cedb3b45779b80c827aabf82f5876f3
   jwtExpirationInMs: 900000 # 15min in milliseconds
   refreshExpirationMs: 2592000000 # 30 days in milliseconds
+
+# RabbitMQ Exchange and Queue Configuration
+rabbitmq:
+  exchange:
+    notifications: notification.exchange
+  queue:
+    follow-notifications: follow.notification.queue
+  routing-key:
+    follow: notification.follow
+
+# Redis TTL Configuration
+redis:
+  notification:
+    ttl: 604800 # 7 days in seconds
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.loopify: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.springframework.amqp: INFO
+    org.springframework.data.redis: INFO

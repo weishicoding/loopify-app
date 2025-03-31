@@ -12,20 +12,27 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@IdClass(UserFollowsId.class) // Composite key class
 public class UserFollows {
 
-    @Id
+    @EmbeddedId
+    private UserFollowsId id;
+
     @ManyToOne
-    @JoinColumn(name = "follower_id", nullable = false)
+    @JoinColumn(name = "follower_id", nullable = false, insertable = false, updatable = false)
     private User follower;
 
-    @Id
     @ManyToOne
-    @JoinColumn(name = "following_id", nullable = false)
+    @JoinColumn(name = "following_id", nullable = false, insertable = false, updatable = false)
     private User following;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // Constructor for convenience
+    public UserFollows(User follower, User following) {
+        this.follower = follower;
+        this.following = following;
+        this.id = new UserFollowsId(follower.getId(), following.getId());
+    }
 }

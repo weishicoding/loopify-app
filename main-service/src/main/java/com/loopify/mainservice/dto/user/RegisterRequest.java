@@ -16,5 +16,5 @@ public class RegisterRequest {
     private String password;
 
     @NotBlank
-    private String nickname;
+    private String confirmPassword;
 }

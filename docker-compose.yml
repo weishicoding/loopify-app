@@ -57,10 +57,12 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: [ "CMD", "mysql", "-uadmin", "-p123456", "-e", "SELECT 1" ]  # 检查数据库可用性
+      test: [ "CMD", "mysql", "-uadmin", "-p123456", "-e", "SELECT 1" ]
       interval: 5s
       timeout: 10s
       retries: 30
+    volumes:
+      - mysql-data:/var/lib/mysql
     networks:
       - app-network
     command:
@@ -71,18 +73,30 @@ services:
 
   redis:
     image: redis:7.0
-    networks:
-      - app-network
+    container_name: loopify-redis
+    restart: always
     ports:
       - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    command: [ "redis-server", "--appendonly", "yes" ]
 
   rabbitmq:
     image: rabbitmq:3.12-management
+    container_name: loopify-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     networks:
       - app-network
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
 
   elasticsearch:
     image: elasticsearch:8.12.0
