@@ -7,7 +7,7 @@ import com.loopify.mainservice.model.user.RefreshToken;
 import com.loopify.mainservice.model.user.User;
 import com.loopify.mainservice.security.JwtService;
 import com.loopify.mainservice.security.RefreshTokenService;
-import com.loopify.mainservice.security.UserService;
+import com.loopify.mainservice.security.CustomUserDetailsService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -36,7 +36,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserService userService;
+    private final CustomUserDetailsService userService;
     private final PasswordEncoder passwordEncoder;
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
@@ -205,6 +205,6 @@ public class AuthController {
     }
 
     private String generateDefaultNickname() {
-        return "user_" + UUID.randomUUID().toString().substring(0, 8);
+        return "user_" + UUID.randomUUID().toString().replace("-", "").substring(0, 5);
     }
 }

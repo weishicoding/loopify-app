@@ -4,6 +4,7 @@ import com.loopify.mainservice.dto.user.UserFollowDto;
 import com.loopify.mainservice.exception.AppException;
 import com.loopify.mainservice.model.user.User;
 import com.loopify.mainservice.model.user.UserFollows;
+import com.loopify.mainservice.notification.FollowNotification;
 import com.loopify.mainservice.repository.user.UserFollowsRepository;
 import com.loopify.mainservice.repository.user.UserRepository;
 import com.loopify.mainservice.service.notification.NotificationService;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,7 +64,15 @@ public class FollowServiceImpl implements FollowService {
         log.info("User {} started following user {}", followerId, followingId);
 
         // Send notification
-        notificationService.sendFollowNotification(follower, following);
+        FollowNotification notification = new FollowNotification(
+                UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE, // notificationId
+                following.getId(),
+                follower.getId(),
+                follower.getNickname(),
+                follower.getAvatarUrl(),
+                LocalDateTime.now()
+        );
+        notificationService.sendFollowNotification(notification);
 
         return true;
     }

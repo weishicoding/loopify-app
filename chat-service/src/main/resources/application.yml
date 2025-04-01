@@ -4,3 +4,12 @@ spring:
   redis:
     host: redis
     port: 6379
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+rabbitmq:
+  queue:
+    follow-notifications: follow.queue

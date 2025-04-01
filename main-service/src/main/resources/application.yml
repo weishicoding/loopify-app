@@ -48,9 +48,9 @@ app:
 # RabbitMQ Exchange and Queue Configuration
 rabbitmq:
   exchange:
-    notifications: notification.exchange
+    notifications: notificationExchange
   queue:
-    follow-notifications: follow.notification.queue
+    follow-notifications: follow.queue
   routing-key:
     follow: notification.follow
 
@@ -58,6 +58,12 @@ rabbitmq:
 redis:
   notification:
     ttl: 604800 # 7 days in seconds
+
+minio:
+  endpoint: http://minio:9000
+  bucket: loopify-app-images
+  access-key: minioadmin
+  secret-key: minioadmin
 
 # Logging Configuration
 logging:

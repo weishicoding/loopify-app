@@ -17,12 +17,6 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.queue.follow-notifications}")
     private String followNotificationQueue;
 
-    @Value("${rabbitmq.queue.order-notifications}")
-    private String orderNotificationQueue;
-
-    @Value("${rabbitmq.queue.activity-notifications}")
-    private String activityNotificationQueue;
-
     @Value("${rabbitmq.routing-key.follow}")
     private String followRoutingKey;
 
@@ -34,16 +28,6 @@ public class RabbitMQConfig {
     @Bean
     public Queue followNotificationQueue() {
         return new Queue(followNotificationQueue);
-    }
-
-    @Bean
-    public Queue orderNotificationQueue() {
-        return new Queue(orderNotificationQueue);
-    }
-
-    @Bean
-    public Queue activityNotificationQueue() {
-        return new Queue(activityNotificationQueue);
     }
 
     @Bean

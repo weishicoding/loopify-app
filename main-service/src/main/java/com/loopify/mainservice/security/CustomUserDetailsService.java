@@ -13,7 +13,7 @@ import java.util.Date;
 
 @RequiredArgsConstructor
 @Service
-public class UserService implements UserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final JwtService jwtService;

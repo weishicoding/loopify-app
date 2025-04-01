@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v1/follow")
 @Slf4j
 @RequiredArgsConstructor
 public class FollowController {
