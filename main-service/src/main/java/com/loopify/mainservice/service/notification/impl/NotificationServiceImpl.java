@@ -27,16 +27,21 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public void sendFollowNotification(FollowNotification followNotification) {
+        String redisKey = "notification:user:" + followNotification.getTargetUserId();
         try {
+            // 先存入 Redis
+            redisTemplate.opsForList().leftPush(redisKey, followNotification);
+            redisTemplate.opsForList().trim(redisKey, 0, 99); // 保留最近 100 条
+
+            // 再发送到 RabbitMQ
             rabbitTemplate.convertAndSend(notificationExchange, followRoutingKey,
                     objectMapper.writeValueAsString(followNotification));
-            log.info("Follow notification sent: User {} followed User {}", followNotification.getActionUserId(), followNotification.getTargetUserId());
-            // Store in Redis for quick access
-            String redisKey = "notification:user:" + followNotification.getTargetUserId();
-            redisTemplate.opsForList().leftPush(redisKey, followNotification);
-            redisTemplate.opsForList().trim(redisKey, 0, 99); // Keep only the 100 most recent
+            log.info("Follow notification sent: User {} followed User {}",
+                    followNotification.getActionUserId(), followNotification.getTargetUserId());
         } catch (Exception e) {
-            log.error("Failed to send follow notification", e);
+            // 如果 RabbitMQ 发送失败，回滚 Redis 操作
+            redisTemplate.opsForList().remove(redisKey, 1, followNotification);
+            log.error("Failed to send follow notification, rolled back Redis operation", e);
         }
     }
 
