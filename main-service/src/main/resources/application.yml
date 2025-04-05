@@ -51,8 +51,10 @@ rabbitmq:
     notifications: notificationExchange
   queue:
     follow-notifications: follow.queue
+    comment-notifications: comment-notification-queue
   routing-key:
     follow: notification.follow
+    comment: notification.comment
 
 # Redis TTL Configuration
 redis:
