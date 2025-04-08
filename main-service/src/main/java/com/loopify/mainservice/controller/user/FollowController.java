@@ -42,12 +42,13 @@ public class FollowController {
                         .body(Map.of("message", "Already following this user"));
             }
 
-        }catch (JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }catch (AppException e) {
+        } catch (AppException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
 
 
+        }
     }
 
     @DeleteMapping("/{userId}/unfollow")
