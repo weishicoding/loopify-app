@@ -3,11 +3,13 @@ package com.loopify.mainservice.schedule;
 import com.loopify.mainservice.repository.user.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
 @RequiredArgsConstructor
+@Component
 public class UserSchedule {
 
     private final RefreshTokenRepository refreshTokenRepository;

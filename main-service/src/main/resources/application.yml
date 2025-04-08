@@ -51,7 +51,7 @@ rabbitmq:
     notifications: notificationExchange
   queue:
     follow-notifications: follow.queue
-    comment-notifications: comment-notification-queue
+    comment-notifications: comment.queue
   routing-key:
     follow: notification.follow
     comment: notification.comment

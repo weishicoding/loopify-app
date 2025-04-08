@@ -1,5 +1,6 @@
 package com.loopify.mainservice.service.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.loopify.mainservice.dto.user.UserFollowDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,7 +9,7 @@ import java.util.List;
 
 public interface FollowService {
 
-    boolean followUser(Long followerId, Long followingId);
+    boolean followUser(Long followerId, Long followingId) throws JsonProcessingException;
 
     boolean unfollowUser(Long followerId, Long followingId);
 

@@ -2,6 +2,7 @@ package com.loopify.mainservice.notification;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.loopify.mainservice.enums.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,6 @@ public abstract class BaseNotification implements Serializable {
     private Long notificationId;
     private Long actionUserId;
     private Long targetUserId;
-    private String type;
+    private NotificationType type;
     private LocalDateTime timestamp;
 }

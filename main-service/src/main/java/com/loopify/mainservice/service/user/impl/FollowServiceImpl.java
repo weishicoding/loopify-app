@@ -1,13 +1,17 @@
 package com.loopify.mainservice.service.user.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.loopify.mainservice.dto.user.UserFollowDto;
+import com.loopify.mainservice.enums.NotificationType;
 import com.loopify.mainservice.exception.AppException;
+import com.loopify.mainservice.model.NotificationOutbox;
 import com.loopify.mainservice.model.user.User;
 import com.loopify.mainservice.model.user.UserFollows;
 import com.loopify.mainservice.notification.FollowNotification;
+import com.loopify.mainservice.repository.notification.NotificationOutboxRepository;
 import com.loopify.mainservice.repository.user.UserFollowsRepository;
 import com.loopify.mainservice.repository.user.UserRepository;
-import com.loopify.mainservice.service.notification.NotificationService;
 import com.loopify.mainservice.service.user.FollowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,11 +33,12 @@ public class FollowServiceImpl implements FollowService {
 
     private final UserFollowsRepository userFollowsRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ObjectMapper objectMapper;
+    private final NotificationOutboxRepository notificationOutboxRepository;
 
     @Override
     @Transactional
-    public boolean followUser(Long followerId, Long followingId) {
+    public boolean followUser(Long followerId, Long followingId) throws JsonProcessingException {
         // Can't follow yourself
         if (followerId.equals(followingId)) {
             log.warn("User {} attempted to follow themselves", followerId);
@@ -61,18 +66,28 @@ public class FollowServiceImpl implements FollowService {
                 .build();
 
         userFollowsRepository.save(userFollows);
-        log.info("User {} started following user {}", followerId, followingId);
 
-        // Send notification
+
+
+
+        Long notificationId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
         FollowNotification notification = new FollowNotification(
-                UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE, // notificationId
+                notificationId, // notificationId
                 following.getId(),
                 follower.getId(),
-                follower.getNickname(),
-                follower.getAvatarUrl(),
-                LocalDateTime.now()
+                userFollows.getFollower().getNickname(),
+                userFollows.getFollower().getAvatarUrl()
         );
-        notificationService.sendFollowNotification(notification);
+
+        // persist data to notification outbox
+        NotificationOutbox notificationOutbox = NotificationOutbox.builder()
+                .id(notificationId)
+                .notificationType(NotificationType.FOLLOW)
+                .payload(objectMapper.writeValueAsString(notification))
+                .build();
+
+        notificationOutboxRepository.save(notificationOutbox);
+        log.info("User {} started following user {}", followerId, followingId);
 
         return true;
     }
