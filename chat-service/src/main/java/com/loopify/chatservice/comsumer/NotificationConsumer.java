@@ -1,13 +1,21 @@
 package com.loopify.chatservice.comsumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.loopify.chatservice.enums.NotificationType;
+import com.loopify.chatservice.model.Notification;
+import com.loopify.chatservice.notification.CommentNotification;
 import com.loopify.chatservice.notification.FollowNotification;
+import com.loopify.chatservice.service.IdempotencyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
@@ -17,38 +25,63 @@ public class NotificationConsumer {
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final IdempotencyService idempotencyService;
 
     @RabbitListener(queues = "${rabbitmq.queue.follow-notifications}")
-    public void handleFollowNotification(String notificationJson) {
+    @Transactional // Start transaction here for DB writes + idempotency check
+    public void handleFollowNotification(String messagePayload,
+                                         @Header(AmqpHeaders.MESSAGE_ID) String messageId,
+                                         @Header(value = "X-Event-Type", required = false, defaultValue = "UNKNOWN") NotificationType messageType) {
+
+        log.debug("Received message ID: {}, Event type: {}", messageId, messageType);
+
+        // Step 1: Idempotency check
+        if (idempotencyService.isProcessed(messageId)) {
+            log.info("Message {} already processed, skipping", messageId);
+            return; // Skip processing, message will be ACKed
+        }
+
         try {
-            FollowNotification notification = objectMapper.readValue(notificationJson, FollowNotification.class);
+            // Step 2: Process and persist notification
+            Notification notification = processEvent(messagePayload, messageType);
 
-            String notificationId = String.valueOf(notification.getNotificationId());
-            String processedKey = "processed:notifications:" + notification.getTargetUserId();
+            if (notification != null) {
+                // Step 3: Save notification to database
+                Notification savedNotification = notificationService.saveNotification(notification);
 
-            // check if notifications was dealt
-            if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(processedKey, notificationId))) {
-                log.info("Notification {} already processed, skipping", notificationId);
-                return;
-            }
+                // Step 4: Mark message as processed (within same transaction)
+                idempotencyService.markAsProcessed(messageId);
 
-            String userId = String.valueOf(notification.getTargetUserId());
-            // check if user is online
-            if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember("online:users", userId))) {
-                messagingTemplate.convertAndSendToUser(
-                        userId,
-                        "/topic/notifications",
-                        notification
-                );
-                log.info("{} notification sent to WebSocket for user {}", notification.getType(), userId);
+                // Step 5: Trigger push notifications after transaction commits
+                eventPublisher.publishEvent(new NotificationSavedEvent(this, savedNotification));
+
+                log.info("Successfully processed notification from message {}, notification ID: {}",
+                        messageId, savedNotification.getId());
             } else {
-                log.info("User {} is offline, notification not sent via WebSocket", userId);
+                log.warn("Event processing yielded no notification, marking as processed: {}", messageId);
+                idempotencyService.markAsProcessed(messageId);
             }
 
-            // mark as it was dealt
-            redisTemplate.opsForSet().add(processedKey, notificationId);
         } catch (Exception e) {
-            log.error("Error processing notification", e);
+            log.error("Failed to process message {}: {}", messageId, e.getMessage(), e);
+            // Re-throw to trigger NACK and DLQ handling
+            throw new RuntimeException("Failed to process message: " + e.getMessage(), e);
+        }
+    }
+
+    private Notification processEvent(String payload, NotificationType eventType) {
+        try {
+            if (eventType == NotificationType.COMMENT) {
+                CommentNotification commentEvent = objectMapper.readValue(payload, CommentNotification.class);
+                return notificationService.createCommentNotification(commentEvent);
+
+            } else if (eventType == NotificationType.FOLLOW) {
+                FollowNotification followEvent = objectMapper.readValue(payload, FollowNotification.class);
+                return notificationService.createFollowNotification(followEvent);
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize event payload: {}", e.getMessage(), e);
+            throw new IllegalArgumentException("Invalid event payload", e);
         }
     }
 }

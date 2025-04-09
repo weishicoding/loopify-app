@@ -1,7 +1,6 @@
-package com.loopify.mainservice.notification;
+package com.loopify.chatservice.notification;
 
-import com.loopify.mainservice.enums.CommentType;
-import com.loopify.mainservice.enums.NotificationType;
+import com.loopify.chatservice.enums.NotificationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,12 +17,12 @@ import java.time.LocalDateTime;
 public class CommentNotification extends BaseNotification {
     private String actionUserName;
     private String actionUserAvatar;
-    private Long relatedId;
-    private CommentType relatedType;
+    private Long postId;
+    private String previewText;
 
-    public CommentNotification(Long notificationId, Long actionUserId, Long targetUserId, Long postId, CommentType relatedType) {
+    public CommentNotification(Long notificationId, Long actionUserId, Long targetUserId, Long postId, String previewText) {
         super(notificationId, actionUserId, targetUserId, NotificationType.COMMENT, LocalDateTime.now());
-        this.relatedId = postId;
-        this.relatedType = relatedType;
+        this.postId = postId;
+        this.previewText = previewText;
     }
 }

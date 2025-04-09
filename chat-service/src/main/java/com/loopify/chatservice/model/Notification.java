@@ -1,6 +1,7 @@
-package com.loopify.mainservice.model;
+package com.loopify.chatservice.model;
 
-import com.loopify.mainservice.enums.NotificationType;
+
+import com.loopify.chatservice.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,18 +23,36 @@ public class Notification {
     private long id;
 
     private Long actionUserId;  // Who triggered the notification
+
     private Long targetUserId;  // Who receives the notification
+
+    private String actionUserName;
+
+    private String actionUserAvatar;
 
     @Enumerated(EnumType.STRING)
     private NotificationType type;
 
-    private String content;     // Content varies by notification type
-    private boolean read;       // Read status
+    private String content;
+
+    private String relatedEntityType;  // POST, COMMENT, etc.
+
+    private Long relatedEntityId;  // ID of the related entity
+
+    private boolean read;
+
     private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
         read = false;
+    }
+
+    @PreUpdate
+    public void onUpdate () {
+        updatedAt = LocalDateTime.now();
     }
 }
