@@ -72,16 +72,39 @@ public class NotificationConsumer {
     private Notification processEvent(String payload, NotificationType eventType) {
         try {
             if (eventType == NotificationType.COMMENT) {
-                CommentNotification commentEvent = objectMapper.readValue(payload, CommentNotification.class);
-                return notificationService.createCommentNotification(commentEvent);
-
+                CommentNotification commentNotification = objectMapper.readValue(payload, CommentNotification.class);
+                return Notification.builder()
+                        .actionUserId(commentNotification.getActionUserId())
+                        .actionUserAvatar(commentNotification.getActionUserAvatar())
+                        .actionUserName(commentNotification.getActionUserNickname())
+                        .targetUserId(commentNotification.getTargetUserId())
+                        .relatedEntityType(commentNotification.getRelatedType())
+                        .relatedEntityId(commentNotification.getRelatedId())
+                        .type(commentNotification.getType())
+                        .content(commentNotification.getActionUserNickname() + " commented on your post: " +
+                                truncateIfNeeded(commentNotification.getContext()))
+                        .build();
             } else if (eventType == NotificationType.FOLLOW) {
-                FollowNotification followEvent = objectMapper.readValue(payload, FollowNotification.class);
-                return notificationService.createFollowNotification(followEvent);
+                FollowNotification followNotification = objectMapper.readValue(payload, FollowNotification.class);
+                return Notification.builder()
+                        .actionUserId(followNotification.getActionUserId())
+                        .actionUserAvatar(followNotification.getActionUserAvatar())
+                        .actionUserName(followNotification.getActionUserNickname())
+                        .targetUserId(followNotification.getTargetUserId())
+                        .type(followNotification.getType())
+                        .content(followNotification.getActionUserNickname() + " started following you")
+                        .build();
             }
         } catch (JsonProcessingException e) {
             log.error("Failed to deserialize event payload: {}", e.getMessage(), e);
             throw new IllegalArgumentException("Invalid event payload", e);
+
         }
+        return new Notification();
+    }
+
+    private String truncateIfNeeded(String text) {
+        if (text == null) return "";
+        return text.length() <= 50 ? text : text.substring(0, 50) + "...";
     }
 }

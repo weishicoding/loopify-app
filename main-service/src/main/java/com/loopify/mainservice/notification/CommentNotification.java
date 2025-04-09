@@ -16,14 +16,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentNotification extends BaseNotification {
-    private String actionUserName;
-    private String actionUserAvatar;
     private Long relatedId;
     private CommentType relatedType;
+    private String context;
 
-    public CommentNotification(Long notificationId, Long actionUserId, Long targetUserId, Long postId, CommentType relatedType) {
-        super(notificationId, actionUserId, targetUserId, NotificationType.COMMENT, LocalDateTime.now());
-        this.relatedId = postId;
+    public CommentNotification(Long notificationId, Long actionUserId, Long targetUserId, Long relatedId, CommentType relatedType, String actionUserNickname, String actionUserAvatar, String context) {
+        super(notificationId, actionUserId, targetUserId, NotificationType.COMMENT, LocalDateTime.now(), actionUserNickname, actionUserAvatar);
+        this.relatedId = relatedId;
         this.relatedType = relatedType;
+        this.context = context;
     }
 }

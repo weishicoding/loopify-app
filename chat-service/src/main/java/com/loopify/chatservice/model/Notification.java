@@ -1,6 +1,7 @@
 package com.loopify.chatservice.model;
 
 
+import com.loopify.chatservice.enums.CommentType;
 import com.loopify.chatservice.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -35,7 +36,7 @@ public class Notification {
 
     private String content;
 
-    private String relatedEntityType;  // POST, COMMENT, etc.
+    private CommentType relatedEntityType;  // POST, COMMENT, etc.
 
     private Long relatedEntityId;  // ID of the related entity
 

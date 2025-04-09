@@ -26,4 +26,6 @@ public abstract class BaseNotification implements Serializable {
     private Long targetUserId;
     private NotificationType type;
     private LocalDateTime timestamp;
+    private String actionUserNickname;
+    private String actionUserAvatar;
 }
