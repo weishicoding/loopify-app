@@ -13,10 +13,10 @@ import java.time.LocalDateTime;
 @Data
 @SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
+//@AllArgsConstructor
 public class FollowNotification extends BaseNotification {
 
-    public FollowNotification(Long notificationId, Long actionUserId, Long targetUserId, String actionUserNickname, String actionUserAvatar) {
-        super(notificationId, actionUserId, targetUserId, NotificationType.FOLLOW, LocalDateTime.now(), actionUserNickname, actionUserAvatar);
-    }
+//    public FollowNotification(Long notificationId, Long actionUserId, Long targetUserId, String actionUserNickname, String actionUserAvatar) {
+//        super(notificationId, actionUserId, targetUserId, NotificationType.FOLLOW, LocalDateTime.now(), actionUserNickname, actionUserAvatar);
+//    }
 }

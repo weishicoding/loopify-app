@@ -25,6 +25,34 @@ services:
       SPRING_DATASOURCE_PASSWORD: 123456
       SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
 
+  chat-service:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    depends_on:
+      # 明确依赖关系，确保 RabbitMQ 和 Redis 先启动
+      # (可以添加 condition: service_started 或 service_healthy 以增加健壮性)
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+    environment:
+      # --- VITAL FIXES ---
+      # 覆盖 application.yml 中的 RabbitMQ 主机名
+      SPRING_RABBITMQ_HOST: rabbitmq
+      # 覆盖 application.yml 中的 Redis 主机名
+      SPRING_DATA_REDIS_HOST: redis
+      # 覆盖 application.yml 中的数据库 URL (如果 chat-service 连接数据库)
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/loopify?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: admin   # 确保这些凭证与 application.yml 或 MySQL 服务匹配
+      SPRING_DATASOURCE_PASSWORD: 123456
+
   minio:
     image: minio/minio:latest
     ports:
@@ -36,17 +64,6 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
-    networks:
-      - app-network
-
-  chat-service:
-    build:
-      context: ./chat-service
-      dockerfile: Dockerfile
-    ports:
-      - "8085:8085"
-    depends_on:
-      - redis
     networks:
       - app-network
 
@@ -142,6 +159,9 @@ networks:
   app-network:
     driver: bridge
 
-volumes:
-  minio-data:
-  nginx-cache:
+volumes: # <-- 添加或修改这个顶层 volumes 部分
+  minio-data: {}  # 已有的 volume (保持)
+  nginx-cache: {} # 已有的 volume (保持)
+  mysql-data: {}  # <-- 添加这一行来声明 mysql-data volume
+  redis-data: {}  # <-- 声明 redis-data volume (你的 redis 服务也用了它)
+  rabbitmq-data: {} # <-- 声明 rabbitmq-data volume (你的 rabbitmq 服务也用了它)

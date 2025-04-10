@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/loopify-app.iml" filepath="$PROJECT_DIR$/.idea/loopify-app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/main-service/main-service.iml" filepath="$PROJECT_DIR$/main-service/main-service.iml" />
     </modules>
   </component>
 </project>

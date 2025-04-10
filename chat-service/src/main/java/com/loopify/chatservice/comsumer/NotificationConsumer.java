@@ -6,14 +6,15 @@ import com.loopify.chatservice.enums.NotificationType;
 import com.loopify.chatservice.model.Notification;
 import com.loopify.chatservice.notification.CommentNotification;
 import com.loopify.chatservice.notification.FollowNotification;
+import com.loopify.chatservice.notification.NotificationSavedEvent;
 import com.loopify.chatservice.service.IdempotencyService;
+import com.loopify.chatservice.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class NotificationConsumer {
 
-    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final IdempotencyService idempotencyService;
+    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher; // To trigger async push AFTER TX commit
 
-    @RabbitListener(queues = "${rabbitmq.queue.follow-notifications}")
+    @RabbitListener(queues = "${rabbitmq.queue.follow-notifications}, ${rabbitmq.queue.comment-notifications}")
     @Transactional // Start transaction here for DB writes + idempotency check
     public void handleFollowNotification(String messagePayload,
                                          @Header(AmqpHeaders.MESSAGE_ID) String messageId,
@@ -53,10 +54,11 @@ public class NotificationConsumer {
                 idempotencyService.markAsProcessed(messageId);
 
                 // Step 5: Trigger push notifications after transaction commits
-                eventPublisher.publishEvent(new NotificationSavedEvent(this, savedNotification));
-
-                log.info("Successfully processed notification from message {}, notification ID: {}",
-                        messageId, savedNotification.getId());
+                if (savedNotification != null) {
+                    eventPublisher.publishEvent(new NotificationSavedEvent(this, savedNotification));
+                    log.info("Successfully processed notification from message {}, notification ID: {}",
+                            messageId, savedNotification.getId());
+                }
             } else {
                 log.warn("Event processing yielded no notification, marking as processed: {}", messageId);
                 idempotencyService.markAsProcessed(messageId);

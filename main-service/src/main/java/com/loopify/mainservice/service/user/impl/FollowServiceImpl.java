@@ -116,7 +116,13 @@ public class FollowServiceImpl implements FollowService {
                 .map(follow -> {
                     User follower = follow.getFollower();
                     boolean isFollowingBack = userFollowsRepository.existsByFollowerIdAndFollowingId(userId, follower.getId());
-                    return UserFollowDto.fromUser(follower, follow.getCreatedAt(), isFollowingBack);
+                    return UserFollowDto.builder()
+                            .userId(follower.getId())
+                            .nickname(follower.getNickname())
+                            .avatarUrl(follower.getAvatarUrl())
+                            .followedAt(follow.getCreatedAt())
+                            .isFollowingBack(isFollowingBack)
+                            .build();
                 })
                 .collect(Collectors.toList());
 
@@ -135,7 +141,13 @@ public class FollowServiceImpl implements FollowService {
                     boolean isFollowingBack = userFollowsRepository.existsByFollowerIdAndFollowingId(
                             following.getId(), userId
                     );
-                    return UserFollowDto.fromUser(following, follow.getCreatedAt(), isFollowingBack);
+                    return UserFollowDto.builder()
+                            .userId(following.getId())
+                            .nickname(following.getNickname())
+                            .avatarUrl(following.getAvatarUrl())
+                            .followedAt(follow.getCreatedAt())
+                            .isFollowingBack(isFollowingBack)
+                            .build();
                 })
                 .collect(Collectors.toList());
 

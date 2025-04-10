@@ -38,10 +38,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated())  // Everything else requires auth
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Login(oauth2 -> oauth2  // Add Gmail OAuth support
-                        .loginPage("/api/auth/google")
-                        .defaultSuccessUrl("/api/auth/google/callback", true));
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+//                .oauth2Login(oauth2 -> oauth2  // Add Gmail OAuth support
+//                        .loginPage("/api/auth/google")
+//                        .defaultSuccessUrl("/api/auth/google/callback", true));
 
         return http.build();
     }

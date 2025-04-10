@@ -40,7 +40,8 @@ public class Notification {
 
     private Long relatedEntityId;  // ID of the related entity
 
-    private boolean read;
+    @Column(name = "is_read")
+    private boolean isRead;
 
     private LocalDateTime createdAt;
 
@@ -49,7 +50,7 @@ public class Notification {
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
-        read = false;
+        isRead = false;
     }
 
     @PreUpdate

@@ -13,7 +13,7 @@ public class UserPresenceService {
 
     private final StringRedisTemplate redisTemplate;
 
-    @Value("${myapp.redis.presence-ttl-seconds}")
+    @Value("${app.redis.presence-ttl-seconds}")
     private long presenceTtlSeconds;
 
     private String getPresenceKey(Long userId) {

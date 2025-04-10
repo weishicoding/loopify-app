@@ -98,13 +98,27 @@ public class AuthController {
 
             log.info("User login successful: {}", user.getEmail());
 
-            return ResponseEntity.ok(Map.of("accessToken", accessToken, "user", UserDto.fromUser(user)));
+
+
+            return ResponseEntity.ok(Map.of("accessToken", accessToken, "user", covertUserToUserDto(user)));
 
         } catch (BadCredentialsException e) {
             log.warn("Failed login attempt for user: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid credentials"));
         }
+    }
+
+    private UserDto covertUserToUserDto(User user) {
+        return UserDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .avatarUrl(user.getAvatarUrl())
+                .bio(user.getBio())
+                .address(user.getAddress())
+                .lastSeenAt(user.getLastSeenAt())
+                .build();
     }
 
     @PostMapping("/refresh-token")
