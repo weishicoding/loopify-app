@@ -35,7 +35,6 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue followNotificationQueue() {
-        System.out.println(">>>> Declaring durable queue: " + followNotificationQueue); // Debug print
         return new Queue(followNotificationQueue, true);
     }
 
