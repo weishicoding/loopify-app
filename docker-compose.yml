@@ -13,17 +13,23 @@ services:
       redis:
         condition: service_started
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_healthy
-
     networks:
       - app-network
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/loopify?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/main_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456
       SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_DATA_REDIS_HOST: redis
+      MINIO_ENDPOINT: http://minio:9000
+    restart: on-failure
 
   chat-service:
     build:
@@ -32,32 +38,32 @@ services:
     ports:
       - "8085:8085"
     depends_on:
-      # 明确依赖关系，确保 RabbitMQ 和 Redis 先启动
-      # (可以添加 condition: service_started 或 service_healthy 以增加健壮性)
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_started
       mysql:
         condition: service_healthy
+      main-service:
+        condition: service_started
     networks:
       - app-network
     environment:
-      # --- VITAL FIXES ---
-      # 覆盖 application.yml 中的 RabbitMQ 主机名
       SPRING_RABBITMQ_HOST: rabbitmq
-      # 覆盖 application.yml 中的 Redis 主机名
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
       SPRING_DATA_REDIS_HOST: redis
-      # 覆盖 application.yml 中的数据库 URL (如果 chat-service 连接数据库)
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/loopify?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: admin   # 确保这些凭证与 application.yml 或 MySQL 服务匹配
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chat_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456
+    restart: on-failure
 
   minio:
     image: minio/minio:latest
     ports:
-      - "9000:9000"    # API 端口
-      - "9001:9001"    # 控制台端口
+      - "9000:9000"
+      - "9001:9001"
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
@@ -66,20 +72,26 @@ services:
       - minio-data:/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   nginx:
     image: nginx:latest
     ports:
       - "80:80"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 20s
       retries: 3
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/.htpasswd:/etc/nginx/.htpasswd  # 认证文件
-      - nginx-cache:/var/cache/nginx           # 缓存目录
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd
+      - nginx-cache:/var/cache/nginx
     depends_on:
       - main-service
       - chat-service
@@ -92,19 +104,20 @@ services:
     container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: loopify
+      MYSQL_DATABASE: main_service_db
       MYSQL_USER: admin
       MYSQL_PASSWORD: 123456
       MYSQL_ROOT_HOST: '%'
     ports:
       - "3306:3306"
     healthcheck:
-      test: [ "CMD", "mysql", "-uadmin", "-p123456", "-e", "SELECT 1" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
       interval: 5s
       timeout: 10s
       retries: 30
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
     networks:
       - app-network
     command:
@@ -123,15 +136,20 @@ services:
       - redis-data:/data
     networks:
       - app-network
-    command: [ "redis-server", "--appendonly", "yes" ]
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3.12-management
     container_name: loopify-rabbitmq
     restart: always
     ports:
-      - "5672:5672"   # AMQP port
-      - "15672:15672" # Management UI port
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
@@ -139,6 +157,12 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   elasticsearch:
     image: elasticsearch:8.12.0
@@ -154,14 +178,20 @@ services:
       memlock:
         soft: -1
         hard: -1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
 networks:
   app-network:
     driver: bridge
 
-volumes: # <-- 添加或修改这个顶层 volumes 部分
-  minio-data: {}  # 已有的 volume (保持)
-  nginx-cache: {} # 已有的 volume (保持)
-  mysql-data: {}  # <-- 添加这一行来声明 mysql-data volume
-  redis-data: {}  # <-- 声明 redis-data volume (你的 redis 服务也用了它)
-  rabbitmq-data: {} # <-- 声明 rabbitmq-data volume (你的 rabbitmq 服务也用了它)
+volumes:
+  minio-data: {}
+  nginx-cache: {}
+  mysql-data: {}
+  redis-data: {}
+  rabbitmq-data: {}

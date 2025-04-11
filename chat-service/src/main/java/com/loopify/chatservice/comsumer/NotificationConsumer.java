@@ -28,7 +28,10 @@ public class NotificationConsumer {
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher; // To trigger async push AFTER TX commit
 
-    @RabbitListener(queues = "${rabbitmq.queue.follow-notifications}, ${rabbitmq.queue.comment-notifications}")
+    @RabbitListener(queues = { // Use curly braces for a String array
+            "${rabbitmq.queue.follow-notifications}",
+            "${rabbitmq.queue.comment-notifications}"
+    })
     @Transactional // Start transaction here for DB writes + idempotency check
     public void handleFollowNotification(String messagePayload,
                                          @Header(AmqpHeaders.MESSAGE_ID) String messageId,

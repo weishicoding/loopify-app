@@ -1,17 +1,15 @@
 server:
   port: 8080
 
-
 spring:
   application:
     name: main-service
   datasource:
-    url: jdbc:mysql://localhost:3306/main-service?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/main_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: admin
     password: 123456
     hikari:
       connection-timeout: 30000
-      initialization-fail-timeout: 0
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -22,13 +20,13 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
 
-  # Redis Configuration
   # RabbitMQ Configuration
   rabbitmq:
     host: localhost
     port: 5672
     username: guest
     password: guest
+    connection-timeout: 60000  # 增加到60秒
     listener:
       simple:
         retry:
@@ -37,10 +35,12 @@ spring:
           max-attempts: 3
           max-interval: 10000
           multiplier: 2
+
+  # Redis Configuration
   data:
     redis:
-      port: 6379
       host: localhost
+      port: 6379
       timeout: 2000
 
 # Custom Application Properties
@@ -66,7 +66,7 @@ redis:
     ttl: 604800 # 7 days in seconds
 
 minio:
-  endpoint: http://minio:9000
+  endpoint: http://localhost:9000
   bucket: loopify-app-images
   access-key: minioadmin
   secret-key: minioadmin
@@ -75,7 +75,7 @@ minio:
 logging:
   level:
     root: INFO
-    com.loopify: DEBUG
+    com.loopify: INFO
     org.springframework.web: INFO
     org.springframework.security: INFO
     org.springframework.amqp: INFO

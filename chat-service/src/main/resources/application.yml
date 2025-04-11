@@ -5,7 +5,7 @@ spring:
   application:
     name: chat-service
   datasource:
-    url: jdbc:mysql://localhost:3306/loopify?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/chat_service_db?useSSL=false&serverTimezone=UTC
     username: admin
     password: 123456
     hikari:
