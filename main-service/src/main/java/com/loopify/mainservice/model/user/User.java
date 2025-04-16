@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.NaturalId;
+
+import java.security.AuthProvider;
 import java.util.Date;
 
 @EqualsAndHashCode(callSuper = true)
@@ -25,14 +28,15 @@ public class User extends DateAudit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NaturalId // Good practice for unique business keys
     @Column(nullable = false, unique = true)
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     @Size(max = 255, message = "Email must be less than 255 characters")
     private String email;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Password is required")
+    @Column()
+//    @NotBlank(message = "Password is required")
     @Size(min = 8, max = 255, message = "Password must be between 8-255 characters")
     private String password;
 
@@ -58,6 +62,22 @@ public class User extends DateAudit {
     @Column(name = "last_seen_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastSeenAt;
+
+    // --- New Field for Google Login ---
+    @Column(name = "google_id", unique = true, nullable = true) // Unique Google User ID, nullable
+    private String googleId;
+
+    // --- New Field to track Auth Method (Optional but Recommended) ---
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false)
+    private AuthProvider authProvider; // e.g., LOCAL, EMAIL_CODE, GOOGLE
+
+    // Define AuthProvider Enum
+    public enum AuthProvider {
+        LOCAL,      // Represents traditional email/password (if kept)
+        EMAIL_CODE, // Represents email + code login/registration
+        GOOGLE      // Represents Google OAuth login/registration
+    }
 
     // Additional methods for business logic
     public boolean isAccountActive() {

@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RedisDistributedLockProvider implements DistributedLockProvider{
 
-    private StringRedisTemplate redisTemplate;
+    private final StringRedisTemplate redisTemplate;
     private final String instanceId = UUID.randomUUID().toString();
 
     // Lua脚本，用于原子性地检查并删除锁

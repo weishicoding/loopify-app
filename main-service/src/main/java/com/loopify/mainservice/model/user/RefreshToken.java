@@ -10,8 +10,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "refresh_tokens",
         indexes = {
-                @Index(name = "idx_user_id", columnList = "user_id"),
-                @Index(name = "idx_token", columnList = "token")
+                @Index(name = "idx_refresh_token_token", columnList = "token", unique = true)
         })
 @Data
 @NoArgsConstructor
@@ -23,7 +22,7 @@ public class RefreshToken extends DateAudit {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
     @Column(nullable = false, unique = true)

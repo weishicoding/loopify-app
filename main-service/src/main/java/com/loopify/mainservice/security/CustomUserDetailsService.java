@@ -24,33 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return CustomUserDetail.builder()
                 .id(user.getId())
                 .email(user.getEmail())
-                .password(user.getPassword())
+                .password(user.getPassword() != null ? user.getPassword() : "")
                 .build();
-    }
-
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
-
-    public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-    }
-
-    public User save(User user) {
-        return userRepository.save(user);
-    }
-
-    @Transactional
-    public void updateLastSeen(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-        user.setLastSeenAt(new Date(System.currentTimeMillis()));
-        userRepository.save(user);
-    }
-
-    public String generateAccessToken(User user) {
-        UserDetails userDetails = loadUserByUsername(user.getEmail());
-        return jwtService.generateToken(userDetails);
     }
 }

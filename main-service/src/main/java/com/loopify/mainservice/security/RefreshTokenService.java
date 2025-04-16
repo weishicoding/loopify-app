@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -23,7 +24,7 @@ public class RefreshTokenService {
 
     // Getter for refreshTokenDurationMs to use in cookie
     @Getter
-    @Value("${app.refreshExpirationMs}")
+    @Value("${app.jwt.refresh-token-expiration-ms}")
     private Long refreshTokenDurationMs;
 
     @Transactional
@@ -44,22 +45,16 @@ public class RefreshTokenService {
     }
 
     @Transactional(readOnly = true)
-    public RefreshToken findByToken(String token) {
-        return refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new AppException("Invalid refresh token"));
+    public Optional<RefreshToken> findByToken(String token) {
+        return refreshTokenRepository.findByToken(token);
     }
 
     @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
-        if (token.isExpired()) {
+        if (token.getExpiresAt().compareTo(Instant.now()) < 0) {
             refreshTokenRepository.delete(token);
-            throw new AppException("Refresh token was expired");
+            throw new RuntimeException("Refresh token was expired. Please make a new signin request");
         }
-
-        if (token.getIsRevoked()) {
-            throw new AppException("Refresh token was revoked");
-        }
-
         return token;
     }
 
@@ -68,6 +63,11 @@ public class RefreshTokenService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         refreshTokenRepository.deleteAllByUser(user);
+    }
+
+    @Transactional
+    public void deleteByToken(String token) {
+        refreshTokenRepository.deleteByToken(token);
     }
 
 }

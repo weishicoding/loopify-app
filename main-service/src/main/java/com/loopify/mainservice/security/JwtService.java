@@ -1,5 +1,6 @@
 package com.loopify.mainservice.security;
 
+import com.loopify.mainservice.model.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -19,10 +20,10 @@ import java.util.function.Function;
 public class JwtService {
 
     // HS256 secret key
-    @Value("${app.jwtSecret}")
+    @Value("${app.jwt.secret}")
     private String jwtSecret;
 
-    @Value("${app.jwtExpirationInMs}")
+    @Value("${app.jwt.access-token-expiration-ms}")
     private long jwtExpirationInMs;
 
 
@@ -35,18 +36,18 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+    public String generateToken(User user) {
+        return generateToken(new HashMap<>(), user);
     }
 
     public String generateToken(
             Map<String, Object> extractClaims,
-            UserDetails userDetails
+            User user
     ) {
         return Jwts
                 .builder()
                 .setClaims(extractClaims)
-                .setSubject(userDetails.getUsername())
+                .setSubject(user.getEmail())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
