@@ -25,11 +25,14 @@ public class EmailService {
     @Value("${app.mailgun.from-email}")
     private String fromEmail;
 
-    // Simple flag for local dev - can be enhanced with profiles
-    private boolean sendEmailsEnabled = true; // Set to false for local testing without sending
+    @Value("${app.mailgun.isSendEmail}")
+    private boolean sendEmailsEnabled;
 
     public void sendVerificationCode(String toEmail, String code) {
+        // Simple flag for local dev - can be enhanced with profiles
+        // Set to false for local testing without sending
         if (!sendEmailsEnabled) {
+            // todo : 测试无法发送邮件，暂时显示code
             log.warn("Email sending disabled. Verification code for {}: {}", toEmail, code);
             return; // Skip sending in local dev if disabled
         }

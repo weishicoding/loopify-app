@@ -31,7 +31,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)  // Stateless API, no CSRF needed
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()  // Public endpoints
+                        .requestMatchers("/api/v1/auth/**").permitAll()  // Public endpoints
                         .anyRequest().authenticated())  // Everything else requires auth
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 //.authenticationProvider(authenticationProvider())
