@@ -32,8 +32,7 @@ public class RefreshTokenService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Revoke all existing tokens for this user
-        refreshTokenRepository.revokeAllUserTokens(user);
+        revokeAllUserTokens(user);
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
@@ -59,15 +58,9 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void deleteByUserId(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        refreshTokenRepository.deleteAllByUser(user);
-    }
-
-    @Transactional
-    public void deleteByToken(String token) {
-        refreshTokenRepository.deleteByToken(token);
+    public void revokeAllUserTokens(User user) {
+        // Revoke all existing tokens for this user
+        refreshTokenRepository.revokeAllUserTokens(user);
     }
 
 }

@@ -35,7 +35,7 @@ public class User extends DateAudit {
     @Size(max = 255, message = "Email must be less than 255 characters")
     private String email;
 
-    @Column()
+    @Column(name = "password")
 //    @NotBlank(message = "Password is required")
     @Size(min = 8, max = 255, message = "Password must be between 8-255 characters")
     private String password;

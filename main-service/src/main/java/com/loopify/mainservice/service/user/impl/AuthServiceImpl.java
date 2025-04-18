@@ -173,9 +173,7 @@ public class AuthServiceImpl implements AuthService {
                 .map(user -> {
                     // Generate new Access token
                     String newAccessToken = jwtService.generateToken(user);
-                    // Optionally rotate refresh token (more secure)
-                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
-                    return new AuthResponse(newAccessToken, newRefreshToken.getToken(), covertUserToUserDto(user));
+                    return new AuthResponse(newAccessToken, requestRefreshToken, covertUserToUserDto(user));
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
@@ -186,14 +184,12 @@ public class AuthServiceImpl implements AuthService {
         // Find and delete the specific refresh token
         Optional<RefreshToken> tokenOpt = refreshTokenService.findByToken(refreshToken);
         if(tokenOpt.isPresent()){
-            refreshTokenService.deleteByToken(refreshToken);
+            refreshTokenService.revokeAllUserTokens(tokenOpt.get().getUser());
             log.info("User logged out, refresh token invalidated: {}", refreshToken.substring(0, 6) + "...");
         } else {
             log.warn("Logout attempt with non-existent refresh token: {}", refreshToken.substring(0, 6) + "...");
             // Decide if this should be an error or just logged
         }
-        // Access token invalidation is typically handled client-side by deleting it.
-        // If using a blacklist, add the access token JTI here.
     }
 
     private UserDto covertUserToUserDto(User user) {
