@@ -1,5 +1,6 @@
 package com.loopify.mainservice.controller.user;
 
+import com.loopify.mainservice.dto.user.UserDto;
 import com.loopify.mainservice.exception.AppException;
 import com.loopify.mainservice.model.user.User;
 import com.loopify.mainservice.repository.user.UserRepository;
@@ -12,9 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.security.Principal;
 
 @RestController
-@RequestMapping("/api/v1/user")
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
@@ -25,7 +27,19 @@ public class UserController {
     @GetMapping("/{userId}")
     public ResponseEntity<?> getUser(@PathVariable Long userId) {
         try {
-            User user = userService.getUserById(userId);
+            UserDto user = userService.getUserById(userId);
+            return ResponseEntity.ok(user);
+        } catch (AppException e) {
+            log.error(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getUser(Principal principal) {
+        try {
+            UserDto user = userService.getUserByEmail(principal);
             return ResponseEntity.ok(user);
         } catch (AppException e) {
             log.error(e.getMessage());

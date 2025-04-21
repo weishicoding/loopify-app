@@ -99,7 +99,8 @@ public class AuthController {
     private void addRefreshTokenCookie(HttpServletResponse response, String token) {
         Cookie refreshTokenCookie = new Cookie(REFRESH_TOKEN_COOKIE_NAME, token);
         refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(true); // For HTTPS environments
+//        refreshTokenCookie.setSecure(true); // For HTTPS environments
+        refreshTokenCookie.setSecure(false); // for local environments
         refreshTokenCookie.setMaxAge((int) (refreshTokenService.getRefreshTokenDurationMs() / 1000));
         refreshTokenCookie.setPath(REFRESH_TOKEN_PATH);
         refreshTokenCookie.setAttribute("SameSite", "Strict"); // Protect against CSRF

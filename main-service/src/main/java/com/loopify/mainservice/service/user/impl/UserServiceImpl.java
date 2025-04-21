@@ -1,5 +1,6 @@
 package com.loopify.mainservice.service.user.impl;
 
+import com.loopify.mainservice.dto.user.UserDto;
 import com.loopify.mainservice.exception.AppException;
 import com.loopify.mainservice.model.user.User;
 import com.loopify.mainservice.repository.user.UserRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.security.Principal;
 
 @Service
 @RequiredArgsConstructor
@@ -22,9 +24,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public User getUserById(Long userId) {
-        return userRepository.findById(userId)
+    public UserDto getUserById(Long userId) {
+        User user =  userRepository.findById(userId)
                 .orElseThrow(() -> new AppException("User not found"));
+        return covertUserToUserDto(user);
+    }
+
+    public UserDto getUserByEmail(Principal principal) {
+        String email = principal.getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new AppException("User not found"));
+        return covertUserToUserDto(user);
     }
 
     @Override
@@ -68,5 +77,17 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException("User not found"));
         user.setNickname(nickname);
         userRepository.save(user);
+    }
+
+    private UserDto covertUserToUserDto(User user) {
+        return UserDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .avatarUrl(user.getAvatarUrl())
+                .bio(user.getBio())
+                .address(user.getAddress())
+                .lastSeenAt(user.getLastSeenAt())
+                .build();
     }
 }
