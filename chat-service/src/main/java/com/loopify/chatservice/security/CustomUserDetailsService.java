@@ -1,15 +1,12 @@
-package com.loopify.mainservice.security;
+package com.loopify.chatservice.security;
 
-import com.loopify.mainservice.model.user.User;
-import com.loopify.mainservice.repository.user.UserRepository;
+import com.loopify.chatservice.model.User;
+import com.loopify.chatservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
 
 @RequiredArgsConstructor
 @Service
@@ -23,6 +20,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return CustomUserDetail.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .password(user.getPassword() != null ? user.getPassword() : "")
                 .build();
     }
 }

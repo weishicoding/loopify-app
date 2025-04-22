@@ -26,16 +26,6 @@ public class JwtService {
     @Value("${app.jwt.access-token-expiration-ms}")
     private long jwtExpirationInMs;
 
-
-    public String getEmailFromToken(String jwt) {
-        return extractClaim(jwt, Claims::getSubject);
-    }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
     public String generateToken(User user) {
         return generateToken(new HashMap<>(), user);
     }
@@ -52,28 +42,6 @@ public class JwtService {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationInMs))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
-    }
-
-    public boolean validateToken(String jwt, UserDetails userDetails) {
-        final String username = getEmailFromToken(jwt);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(jwt);
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
-    }
-
-    private Claims extractAllClaims(String token) {
-        return Jwts
-                .parserBuilder()
-                .setSigningKey(getSignInKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 
     private Key getSignInKey() {

@@ -1,6 +1,6 @@
-package com.loopify.mainservice.config;
+package com.loopify.chatservice.config;
 
-import com.loopify.mainservice.security.TrustedHeaderAuthenticationFilter;
+import com.loopify.chatservice.security.TrustedHeaderAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +18,6 @@ public class SecurityConfig {
 
 
     private final TrustedHeaderAuthenticationFilter trustedHeaderFilter;
-//    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
 
     @Bean
@@ -27,12 +26,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)  // Stateless API, no CSRF needed
                 .httpBasic(AbstractHttpConfigurer::disable) // <-- Disable HTTP Basic
                 .formLogin(AbstractHttpConfigurer::disable) // <-- Disable Form Login
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()  // Public endpoints
-                        .anyRequest().authenticated())  // Everything else requires auth
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())  // Everything else requires auth
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                //.authenticationProvider(authenticationProvider())
                 .addFilterBefore(trustedHeaderFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

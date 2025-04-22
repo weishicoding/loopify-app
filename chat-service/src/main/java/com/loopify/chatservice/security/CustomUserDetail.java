@@ -1,4 +1,4 @@
-package com.loopify.mainservice.security;
+package com.loopify.chatservice.security;
 
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,6 +18,8 @@ public class CustomUserDetail implements UserDetails {
 
     private String email;
 
+    private String password;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
@@ -25,7 +27,7 @@ public class CustomUserDetail implements UserDetails {
 
     @Override
     public String getPassword() {
-        return null;
+        return password;
     }
 
     @Override

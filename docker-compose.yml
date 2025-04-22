@@ -1,4 +1,23 @@
 services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8888:8888"
+    networks:
+      - app-network
+    depends_on:
+      main-service:
+        condition: service_started # Wait for services to be running
+      chat-service:
+        condition: service_started
+    environment:
+      APP_JWT_SECRET: 8905473032bb464a531e7f1c52a28b6b793f46379f8a8c2d899f30e47325e897fcc7c284005593b242334e6642d5f275c601634ee3d66a02dda7a787064612772dbfc8b599f8d3b4e74a60b564f42ec6a15750c819aa0b59c294b9c8dc51800b6198d2dd6ea0415fc079bf83f6403a2c5f8f029acc092b1e1a120fb805e46e7c3e17b4e7b17632aeaf43f455bac480bc8c1d672bc83e2e86e5daf16ebf1f1be9d9d5b02d6fd97f4c900dc73b6f082a24e6f9e6530f59fc56fb7d20ccf5d73fc7c6b05be5c4f19a50cba77aa406366abf8fe5b98f84e3c3fc5500aec446bf74b806f4c843ad572953463227c24c4ef9ad5cedb3b45779b80c827aabf82f5876f3
+      MAIN_SERVICE_URL: http://main-service:8080
+      CHAT_SERVICE_URL: http://chat-service:8085
+    restart: on-failure
+
   main-service:
     build:
       context: ./main-service
@@ -93,8 +112,7 @@ services:
       - ./nginx/.htpasswd:/etc/nginx/.htpasswd
       - nginx-cache:/var/cache/nginx
     depends_on:
-      - main-service
-      - chat-service
+      - api-gateway
       - minio
     networks:
       - app-network

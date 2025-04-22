@@ -31,7 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-
-main-service/.env
-application-*.yml
-docker-compose.yml
