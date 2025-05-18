@@ -1,4 +1,99 @@
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: "ruok"
+      ZOOKEEPER_DATA_DIR: /var/lib/zookeeper
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "stat /proc/1/status || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    ports:
+      - "9092:9092" # 供 Docker 网络内部服务使用
+      - "29092:29092" # 供外部(宿主机)访问 Kafka (如果需要)
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://:9092,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092 # 宿主机通过 localhost:29092 访问
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1 # 对于 Confluent 镜像
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1 # 对于 Confluent 镜像
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "/usr/bin/kafka-topics --bootstrap-server localhost:9092 --list || exit 1" ] # 确保 Kafka 正常
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  connect: # Kafka Connect 服务
+    image: confluentinc/cp-kafka-connect-base:7.6.1 # 使用 base 镜像，方便添加 connector
+    container_name: kafka-connect
+    ports:
+      - "8083:8083"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "connect"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: "connect-cdc-group"
+      CONNECT_CONFIG_STORAGE_TOPIC: "connect_cdc_configs"
+      CONNECT_OFFSET_STORAGE_TOPIC: "connect_cdc_offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "connect_cdc_status"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_INTERNAL_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+    networks:
+      - app-network
+    volumes:
+      # 将下载的 Debezium MySQL Connector jar 包目录挂载到容器中
+      - ./connectors/debezium-mysql-connector:/usr/share/confluent-hub-components/debezium-connector-mysql
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/connectors" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -12,6 +107,8 @@ services:
         condition: service_started # Wait for services to be running
       chat-service:
         condition: service_started
+      kafka:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
       interval: 10s
@@ -37,7 +134,9 @@ services:
         condition: service_started
       redis:
         condition: service_started
-      rabbitmq:
+      kafka:
+        condition: service_healthy
+      zookeeper:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -48,12 +147,9 @@ services:
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456
       SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: guest
-      SPRING_RABBITMQ_PASSWORD: guest
       SPRING_DATA_REDIS_HOST: redis
       MINIO_ENDPOINT: http://minio:9000
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     restart: on-failure
 
   chat-service:
@@ -63,7 +159,9 @@ services:
     ports:
       - "8085:8085"
     depends_on:
-      rabbitmq:
+      kafka:
+        condition: service_healthy
+      zookeeper:
         condition: service_healthy
       redis:
         condition: service_started
@@ -74,15 +172,44 @@ services:
     networks:
       - app-network
     environment:
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: guest
-      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/chat_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: 123456
     restart: on-failure
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: main_service_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: 123456
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d # 用于创建 chat_service_db 和 debezium 用户
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456" ]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+    restart: unless-stopped
 
   minio:
     image: minio/minio:latest
@@ -124,33 +251,6 @@ services:
     networks:
       - app-network
 
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: main_service_db
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: 123456
-      MYSQL_ROOT_HOST: '%'
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
-    volumes:
-      - mysql-data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d
-    networks:
-      - app-network
-    command:
-      --default-authentication-plugin=mysql_native_password
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --max_connections=1000
-
   redis:
     image: redis:7.0
     container_name: loopify-redis
@@ -167,27 +267,6 @@ services:
       interval: 5s
       timeout: 10s
       retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3.12-management
-    container_name: loopify-rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - app-network
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   elasticsearch:
     image: elasticsearch:8.12.0
@@ -219,4 +298,6 @@ volumes:
   nginx-cache: {}
   mysql-data: {}
   redis-data: {}
-  rabbitmq-data: {}
+  kafka-data: {}
+  zookeeper-data: {}
+  zookeeper-log: {}

@@ -8,6 +8,7 @@ import com.loopify.mainservice.exception.AppException;
 import com.loopify.mainservice.model.NotificationOutbox;
 import com.loopify.mainservice.model.user.User;
 import com.loopify.mainservice.model.user.UserFollows;
+import com.loopify.mainservice.notification.BaseNotification;
 import com.loopify.mainservice.notification.FollowNotification;
 import com.loopify.mainservice.repository.notification.NotificationOutboxRepository;
 import com.loopify.mainservice.repository.user.UserFollowsRepository;
@@ -71,7 +72,7 @@ public class FollowServiceImpl implements FollowService {
 
 
         Long notificationId = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
-        FollowNotification notification = new FollowNotification(
+        BaseNotification notification = new FollowNotification(
                 notificationId, // notificationId
                 following.getId(),
                 follower.getId(),

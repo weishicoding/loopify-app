@@ -20,35 +20,32 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
-  # Redis Configuration
-  # RabbitMQ Configuration
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    listener:
-      simple:
-        retry:
-          enabled: true
-          initial-interval: 1000
-          max-attempts: 3
-          max-interval: 10000
-          multiplier: 2
   data:
     redis:
       port: 6379
       host: localhost
       timeout: 2000
 
-rabbitmq:
-  queue:
-    follow-notifications: follow.queue
-    comment-notifications: comment.queue
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: chat-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
 app:
   websocket:
     heartbeat-interval-ms: 30000 # 30 seconds
   redis:
     presence-ttl-seconds: 90
+  kafka:
+    topics:
+      follow-notifications: follow-notifications-topic
+      comment-notifications: comment-notifications-topic
 

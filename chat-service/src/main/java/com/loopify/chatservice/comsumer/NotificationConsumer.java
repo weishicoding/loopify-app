@@ -11,12 +11,9 @@ import com.loopify.chatservice.service.IdempotencyService;
 import com.loopify.chatservice.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Slf4j
@@ -28,14 +25,8 @@ public class NotificationConsumer {
     private final NotificationService notificationService;
     private final ApplicationEventPublisher eventPublisher; // To trigger async push AFTER TX commit
 
-    @RabbitListener(queues = { // Use curly braces for a String array
-            "${rabbitmq.queue.follow-notifications}",
-            "${rabbitmq.queue.comment-notifications}"
-    })
-    @Transactional // Start transaction here for DB writes + idempotency check
-    public void handleFollowNotification(String messagePayload,
-                                         @Header(AmqpHeaders.MESSAGE_ID) String messageId,
-                                         @Header(value = "X-Event-Type", required = false, defaultValue = "UNKNOWN") NotificationType messageType) {
+    @KafkaListener(topics = "${app.kafka.topics.follow-notifications}", groupId = "${spring.kafka.consumer.group-id}")
+    public void handleFollowNotification(String messagePayload, String messageId,NotificationType messageType) {
 
         log.debug("Received message ID: {}, Event type: {}", messageId, messageType);
 

@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
         @JsonSubTypes.Type(value = FollowNotification.class, name = "FOLLOW"),
         @JsonSubTypes.Type(value = CommentNotification.class, name = "COMMENT")
 })
-public abstract class BaseNotification implements Serializable {
+public class BaseNotification implements Serializable {
     private Long notificationId;
     private Long actionUserId;
     private Long targetUserId;

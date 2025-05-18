@@ -1,0 +1,41 @@
+{
+  "name": "outbox-source-connector",
+  "config": {
+
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "tasks.max": "1",
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "debezium",
+    "database.password": "dbz_123456",
+    "database.server.id": "10001",
+    "database.server.name": "loopify_app",
+    "database.include.list": "main_service_db",
+    "table.include.list": "main_service_db.notification_outbox",
+
+    "topic.prefix": "dbz.outbox",
+
+    "database.history.kafka.bootstrap.servers": "kafka:9092",
+    "database.history.kafka.topic": "schemahistory.loopify.outbox.main",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+    "time.precision.mode": "connect",
+    "include.schema.changes": "false",
+    "tombstones.on.delete": "false",
+
+    "transforms": "unwrap,extractActualPayload,routeToTopic",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.extractActualPayload.type": "org.apache.kafka.connect.transforms.ExtractField$Value",
+    "transforms.extractActualPayload.field": "payload",
+    "transforms.routeToTopic.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.routeToTopic.regex": "dbz\\.outbox\\.loopify_app\\.main_service_db\\.notification_outbox",
+    "transforms.routeToTopic.replacement": "notifications.outbox.events.v1"
+
+
+
+  }
+}
