@@ -46,6 +46,5 @@ app:
     presence-ttl-seconds: 90
   kafka:
     topics:
-      follow-notifications: follow-notifications-topic
-      comment-notifications: comment-notifications-topic
+      outbox-events: "notifications.outbox.events.v1"
 
